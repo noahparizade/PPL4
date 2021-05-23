@@ -26,7 +26,13 @@ type PromisedStore<K, V> = {
  }
 
  export function getAll<K, V>(store: PromisedStore<K, V>, keys: K[]): Promise<V[]> | Promise<void> {
-    return keys.length === 0 ? Promise.resolve([]) : store.get(keys[0])
+    //Promise.all(keys.reduce((acc, cur)=> acc.concat([store.get(cur)]) , []));
+   // return Promise.all(acc) 
+   // ??
+    
+
+
+
     
  }
 
