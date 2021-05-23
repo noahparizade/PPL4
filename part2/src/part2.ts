@@ -9,24 +9,26 @@ type PromisedStore<K, V> = {
 }
 
 
-// export function makePromisedStore<K, V>(): PromisedStore<K, V> {
-//     ???
-//     return {
-//         get(key: K) {
-//             ???
-//         },
-//         set(key: K, value: V) {
-//             ???
-//         },
-//         delete(key: K) {
-//             ???
-//         },
-//     }
-// }
+ export function makePromisedStore<K, V>(): PromisedStore<K, V> {
+     let map = new Map()
+     return {
+         get(key: K) {
+            return map.has(key)? Promise.resolve(map.get(key)) : Promise.reject(MISSING_KEY)
+         },
+         set(key: K, value: V) {
+            map = map.set(key, value)
+            return Promise.resolve()
+     } ,
+         delete(key: K) {
+            return map.delete(key)? Promise.resolve() : Promise.reject(MISSING_KEY)
+        },
+    }
+ }
 
-// export function getAll<K, V>(store: PromisedStore<K, V>, keys: K[]): ??? {
-//     ???
-// }
+ export function getAll<K, V>(store: PromisedStore<K, V>, keys: K[]): Promise<V[]> | Promise<void> {
+    return keys.length === 0 ? Promise.resolve([]) : store.get(keys[0])
+    
+ }
 
 /* 2.2 */
 
