@@ -53,27 +53,23 @@ export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise
 
 /* 2.3 */
 
- export function lazyFilter<T>(genFn: () => Generator<T>, filterFn: (a:T[])=>T[]): ()=>Generator<T> {
-     let gen = genFn();
-     function* lazygen():Generator<T> {
-     for (let v of gen){
-         if (filterFn([v]).length>0) yield v  
-     }
-    }
-    let func = ()=>lazygen();
+ export function lazyFilter<T>(genFn: () => Generator<T>, filterFn:(param:T)=>boolean): ()=> Generator<T> {
+    function* func() {
+        for( let v of genFn()){
+            if(filterFn(v)) yield v
+        }
+    } 
     return func;
-
  }
 
- export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: (a:T[])=>R[]): ()=>Generator<R> {
-    let gen = genFn();
-    function* lazygen():Generator<R> {
-    for (let v of gen){
-        yield mapFn([v])[0] 
-    }
+ export function lazyMap<T, R>(genFn: () => Generator<T>, mapFn: (param:T)=>R): ()=> Generator<R> {
+   function* func() {
+       for (let v of genFn()){
+           yield mapFn(v);
+       }
    }
-   let func = ()=>lazygen();
-   return func;
+    return func;
+
  }
 
 /* 2.4 */
