@@ -2,7 +2,7 @@
 
 import chai, { expect } from 'chai';
 
-import { asycMemo, asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
+import { asycMemo,asyncWaterfallWithRetry, getAll, lazyFilter, lazyMap, makePromisedStore, MISSING_KEY } from '../src/part2';
 
 import chaiAsPromised from 'chai-as-promised'
 

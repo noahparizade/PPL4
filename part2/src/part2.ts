@@ -34,6 +34,7 @@ type PromisedStore<K, V> = {
 
 // ??? (you may want to add helper functions here)
 
+
 export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise<R> {
          return await store.get(param); 
 }
@@ -44,7 +45,7 @@ export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise
      let ans:(param:T) =>Promise<R> = (param:T) => {
          return checkValue(store, param).then((val:R)=>val, ()=>{
              let result:R = f(param);
-             store.set(param,result);
+             store.set(param, result)
              return result;
          })
      }
@@ -75,12 +76,23 @@ export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise
 /* 2.4 */
 // you can use 'any' in this question
 
- export async function asyncWaterfallWithRetry(fns: [() => Promise<any>, (x:any)=>Promise<any>[]]): Promise<any> {
-     fns[0]().then((x: any)=> recWaterfall(fns[1], 0, 0, x), ()=> {
-         let p = Promise.resolve(())
-         setTimeout(p.then,2000)
- }
 
- export async function recWaterfall(fns: (x:any)=>Promise<any>[], i: number, numOfFails: number, x:any): Promise<any> {
-     return i===0
- }
+export async function check_func( numOfFails: number, f:any, param:any, isFirst:boolean) : Promise<any> {
+   return isFirst ? 
+    await f().then((res:any)=>res,(rej:any)=>{
+        numOfFails++
+        return (numOfFails<3) ? setTimeout(()=> check_func(numOfFails, f, param, isFirst), 2000) : rej
+    }) :
+
+    await f(param).then((res:any)=>res,(rej:any)=>{
+        numOfFails++
+        return (numOfFails<3) ? setTimeout(()=> check_func(numOfFails, f, param, isFirst), 2000) : rej
+    })
+
+}
+
+export async function asyncWaterfallWithRetry(fns:[ ()=>Promise<any> , ...((item:any)=> Promise<any>)[]]): Promise<any> {
+    let promise_first = check_func(0, fns[0],undefined,true)
+    return fns.length === 1? promise_first : promise_first.then((res:any)=> 
+    fns.slice(1).reduce((acc, cur)=>check_func(0, cur, acc, false), res) , (rej:any)=> rej )
+}
