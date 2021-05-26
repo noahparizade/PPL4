@@ -244,7 +244,9 @@ export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp>
     const val = exp.val
     const typeOfvar = exp.var.texp
     const constraint = bind(typeofExp(val,tenv), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
-    return bind(constraint, ()=>makeOk(T.makeVoidTExp())); //TODO: need to update the environment 
+    return bind(constraint, ()=>{
+        tenv = E.makeExtendTEnv([var1],[typeOfvar],tenv); //LEGAL????
+        return makeOk(T.makeVoidTExp())}); 
 };
 
 // Purpose: compute the type of a program
@@ -255,8 +257,29 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(exp.exps) ? makeFailure("Empty program") :
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
-const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => 
-    makeFailure('TODO typeofProgramExps');
+const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
+    const type_val = typeofExp(exp,tenv)
+    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)):
+    bind(type_val,(x:T.TExp)=> exps.reduce((acc,curr)=> 
+    bind(acc,(y:T.TExp)=>
+    T.isNumTExp(curr)? makeOk(curr) 
+    A.isNumExp(exp) ? makeOk(T.makeNumTExp()) :
+    A.isBoolExp(exp) ? makeOk(T.makeBoolTExp()) :
+    A.isStrExp(exp) ? makeOk(T.makeStrTExp()) :
+    A.isPrimOp(exp) ? TC.typeofPrim(exp) :
+    A.isVarRef(exp) ? E.applyTEnv(tenv, exp.var) :
+    A.isIfExp(exp) ? typeofIf(exp, tenv) :
+    A.isProcExp(exp) ? typeofProc(exp, tenv) :
+    A.isAppExp(exp) ? typeofApp(exp, tenv) :
+    A.isLetExp(exp) ? typeofLet(exp, tenv) :
+    A.isLetrecExp(exp) ? typeofLetrec(exp, tenv) :
+    A.isDefineExp(exp) ? typeofDefine(exp, tenv) :
+    A.isProgram(exp) ? typeofProgram(exp, tenv) :
+    A.isClassExp(exp) ? typeofClass(exp, tenv) : 
+    A.isLitExp(exp) ? typeofLit(exp) :
+    A.isSetExp(exp) ? typeofSet(exp, tenv) :
+    exp,x)))
+}
 
 
 // Purpose: compute the type of a literal expression
@@ -273,7 +296,12 @@ export const typeofLit = (exp: A.LitExp): Result<T.TExp> => {
 //   (set! var val)
 // TODO - write the typing rule for set-exp
 export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    return makeFailure('TODO typeofSet');
+    const cur_val = typeofExp(exp.var,tenv)
+    const new_val = typeofExp(exp.val,tenv)
+    const constraint =  bind(cur_val,(y:T.TExp)=>bind(new_val, (x:T.TExp)=>checkEqualType(x, y,exp))) 
+    return safe2((cons:true, newVal:T.TExp)=>{
+        tenv = E.makeExtendTEnv([exp.var.var],[newVal],tenv); //LEGAL?
+        return makeOk(T.makeVoidTExp())})(constraint,new_val)
 };
 
 // Purpose: compute the type of a class-exp(type fields methods)
