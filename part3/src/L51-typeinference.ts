@@ -164,8 +164,8 @@ const typeofIf = (ifExp: A.IfExp, tenv: E.TEnv): Result<T.TExp> => {
 // If   type<body>(extend-tenv(x1=t1,...,xn=tn; tenv)) = t
 // then type<lambda (x1:t1,...,xn:tn) : t exp)>(tenv) = (t1 * ... * tn -> t)
 export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
-    const argsTEs = R.map((vd) => vd.texp, proc.args);
-    const extTEnv = E.makeExtendTEnv(R.map((vd) => vd.var, proc.args), argsTEs, tenv);
+    const argsTEs = R.map((vd:A.VarDecl) => vd.texp, proc.args);
+    const extTEnv = E.makeExtendTEnv(R.map((vd:A.VarDecl) => vd.var, proc.args), argsTEs, tenv);
     const constraint1 = bind(typeofExps(proc.body, extTEnv), (bodyTE: T.TExp) => checkEqualType(bodyTE, proc.returnTE, proc));
     return bind(constraint1, _ => makeOk(T.makeProcTExp(argsTEs, proc.returnTE)));
 };
@@ -195,9 +195,9 @@ export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
 //      type<body>(extend-tenv(var1=t1,..,varn=tn; tenv)) = t
 // then type<let ((var1 val1) .. (varn valn)) body>(tenv) = t
 export const typeofLet = (exp: A.LetExp, tenv: E.TEnv): Result<T.TExp> => {
-    const vars = R.map((b) => b.var.var, exp.bindings);
-    const vals = R.map((b) => b.val, exp.bindings);
-    const varTEs = R.map((b) => b.var.texp, exp.bindings);
+    const vars = R.map((b:A.Binding) => b.var.var, exp.bindings);
+    const vals = R.map((b:A.Binding) => b.val, exp.bindings);
+    const varTEs = R.map((b:A.Binding) => b.var.texp, exp.bindings);
     const constraints = zipWithResult((varTE, val) => bind(typeofExp(val, tenv),
                                                            (valTE: T.TExp) => checkEqualType(varTE, valTE, exp)),
                                       varTEs, vals);
@@ -240,7 +240,11 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 //   (define (var : texp) val)
 // TODO - write the typing rule for define-exp
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
-    return makeFailure('TODO typeofDefine');
+    const var1 = exp.var.var
+    const val = exp.val
+    const typeOfvar = exp.var.texp
+    const constraint = bind(typeofExp(val,tenv), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
+    return bind(constraint, ()=>makeOk(T.makeVoidTExp())); //TODO: need to update the environment 
 };
 
 // Purpose: compute the type of a program
@@ -259,8 +263,10 @@ const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TE
 //      - Only need to cover the case of Symbol and Pair
 //      - for a symbol - record the value of the symbol in the SymbolTExp
 //        so that precise type checking can be made on ground symbol values.
-export const typeofLit = (exp: A.LitExp): Result<T.TExp> =>
+export const typeofLit = (exp: A.LitExp): Result<T.TExp> => {
+    const val = exp.val
     makeFailure(`TODO typeofLit`);
+}
 
 // Purpose: compute the type of a set! expression
 // Typing rule:
