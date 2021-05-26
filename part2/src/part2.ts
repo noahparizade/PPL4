@@ -81,12 +81,12 @@ export async function check_func( numOfFails: number, f:any, param:any, isFirst:
    return isFirst ? 
     await f().then((res:any)=>res,(rej:any)=>{
         numOfFails++
-        return (numOfFails<3) ? setTimeout(()=> check_func(numOfFails, f, param, isFirst), 2000) : rej
+        return (numOfFails<3) ? new Promise((resolve)=>setTimeout(()=> resolve(check_func(numOfFails, f, param, isFirst)), 2000)) : rej
     }) : 
  
     await f(param).then((res:any)=> res ,(rej:any)=>{
         numOfFails++
-        return (numOfFails<3) ? setTimeout(()=> check_func(numOfFails, f, param, isFirst), 2000)
+        return (numOfFails<3) ? new Promise((resolve)=>setTimeout(()=> resolve(check_func(numOfFails, f, param, isFirst)), 2000))
         : rej
    })}
 
