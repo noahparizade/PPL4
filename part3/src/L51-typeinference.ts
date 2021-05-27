@@ -258,7 +258,8 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
     const type_val = typeofExp(exp,tenv)
-    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val,(x:T.TExp)=> 
+    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(type_val === typeofDefine))
+    bind(type_val,(x:T.TExp)=> 
         bind(update_env(exp,tenv),(newenv:E.TEnv)=>checkProgram(exps,newenv)))
 }
 
