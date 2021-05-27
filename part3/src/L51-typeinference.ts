@@ -295,8 +295,7 @@ const update_env = (exp: A.Exp, tenv: E.TEnv) : Result<E.TEnv> =>
 export const typeofLit = (exp: A.LitExp): Result<T.TExp> => {
     const val = exp.val
     return V.isSymbolSExp(val)?makeOk(T.makeSymbolTExp(val)):
-    V.isCompoundSExp(val)? makeOk(T.makePairTExp()):
-    isString(val): 
+    makeOk(T.makePairTExp())
 }
 
 // Purpose: compute the type of a set! expression
