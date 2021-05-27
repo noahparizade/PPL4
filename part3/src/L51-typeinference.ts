@@ -258,35 +258,14 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
     const type_val = typeofExp(exp,tenv)
-    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(type_val === typeofDefine))
-    bind(type_val,(x:T.TExp)=> 
-        bind(update_env(exp,tenv),(newenv:E.TEnv)=>checkProgram(exps,newenv)))
+    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
+    checkProgram(exps, E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)):
+    checkProgram(exps, tenv)))
 }
 
 const checkProgram = (exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
     bind(typeofProgramExps(first(exps),rest(exps), tenv), (ans:T.TExp) => makeOk(ans));
-
-const update_env = (exp: A.Exp, tenv: E.TEnv) : Result<E.TEnv> => 
-    A.isNumExp(exp) ? makeOk(tenv) :
-    A.isBoolExp(exp) ? makeOk(tenv) :
-    A.isStrExp(exp) ? makeOk(tenv) :
-    A.isPrimOp(exp) ? makeOk(tenv) :
-    A.isVarRef(exp) ?makeOk(tenv) :
-    A.isIfExp(exp) ? makeOk(tenv) :
-    A.isProcExp(exp) ? makeOk(tenv) :
-    A.isAppExp(exp) ? makeOk(tenv) :
-    A.isLetExp(exp) ? bind(typeofLet(exp, tenv), (x:T.TExp)=> 
-    makeOk(E.makeExtendTEnv(R.map((b:A.Binding) => b.var.var, exp.bindings), R.map((b:A.Binding) => b.var.texp, exp.bindings), tenv))):
-    A.isLetrecExp(exp) ? bind(typeofLetrec(exp, tenv), (x:T.TExp)=> 
-    makeOk(E.makeExtendTEnv(R.map((b:A.Binding) => b.var.var, exp.bindings), R.map((b:A.Binding) => b.var.texp, exp.bindings), tenv))):
-    A.isDefineExp(exp) ? bind(typeofDefine(exp, tenv), (x:T.TExp)=>makeOk(E.makeExtendTEnv([exp.var.var],[x],tenv))) :
-    // L51
-    A.isClassExp(exp) ? makeOk(tenv) : //add after writing class
-    A.isLitExp(exp) ? makeOk(tenv) :
-    A.isSetExp(exp) ? makeOk(tenv) :
-    makeOk(tenv)
-    
 
 
 // Purpose: compute the type of a literal expression

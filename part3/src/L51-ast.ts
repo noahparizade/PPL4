@@ -12,7 +12,7 @@ import { allT, first, rest, second, isEmpty } from '../shared/list';
 import { parse as p, isToken, isSexpString } from "../shared/parser";
 import { Result, bind, makeFailure, mapResult, makeOk, safe2, safe3 } from "../shared/result";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
-import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp } from './TExp51';
+import { isTVar, makeFreshTVar, makeTVar, parseTExp, unparseTExp, TVar, TExp, parseTE } from './TExp51';
 import { makeClassTExp, ClassTExp } from "./TExp51";
 
 /*
@@ -77,12 +77,12 @@ export const isCompoundExp = (x: any): x is CompoundExp =>
 export const expComponents = (e: Exp): CExp[] =>
     isIfExp(e) ? [e.test, e.then, e.alt] :
     isProcExp(e) ? e.body :
-    isLetExp(e) ? [...e.body, ...map((b) => b.val, e.bindings)] :
-    isLetrecExp(e) ? [...e.body, ...map((b) => b.val, e.bindings)] :
+    isLetExp(e) ? [...e.body, ...map((b:Binding) => b.val, e.bindings)] :
+    isLetrecExp(e) ? [...e.body, ...map((b:Binding) => b.val, e.bindings)] :
     isAppExp(e) ? [e.rator, ...e.rands] :
     isSetExp(e) ? [e.val] :
     isDefineExp(e) ? [e.val] :
-    isClassExp(e) ? map((b) => b.val, e.methods) : // L51
+    isClassExp(e) ? map((b:Binding) => b.val, e.methods) : // L51
     isAtomicExp(e) ? [] :
     isLitExp(e) ? [] :
     e; 
@@ -308,8 +308,8 @@ export const parseVarDecl = (sexp: Sexp): Result<VarDecl> => {
 
 const parseBindings = (bindings: [Sexp, Sexp][]): Result<Binding[]> =>
     safe2((vds: VarDecl[], vals: CExp[]) => makeOk(zipWith(makeBinding, vds, vals)))
-        (mapResult(parseVarDecl, map(b => b[0], bindings)), 
-         mapResult(parseL5CExp, map(b => b[1], bindings)));
+        (mapResult(parseVarDecl, map((b : [Sexp, Sexp])=> b[0], bindings)), 
+         mapResult(parseL5CExp, map((b : [Sexp, Sexp]) => b[1], bindings)));
 
 const parseLetrecExp = (bindings: Sexp, body: Sexp[]): Result<LetrecExp> =>
     isEmpty(body) ? makeFailure('Body of "letrec" cannot be empty') :
@@ -335,9 +335,25 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     (params.length != 4) || (params[0] != ':') ? makeFailure(`class must have shape (class [: <type>]? <fields> <methods>) - got ${params.length} params instead`) :
     parseGoodClassExp(params[1], params[2], params[3]);
 
-const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>
-    makeFailure("TODO parseGoodClassExp");
+const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>{
+    if (isString(typeName)&&isArray(varDecls) &&isGoodBindings(bindings)){ 
+        const typeclass = makeTVar(typeName)
+        const varsdecs = mapResult((x:Sexp)=>parseVarDecl(x) , varDecls) //fields
+        const vars = bindings.map((b:[Sexp,Sexp])=>b[0]);
+        const vars_to_VarDec = mapResult((x:Sexp)=>parseVarDecl(x) , vars) //methods names
+        const valsResult = mapResult((binding:[Sexp,Sexp]) => parseL5CExp(second(binding)), bindings); //methods body
+        const check : Result<Boolean> = bind(valsResult,(x:CExp[])=>makeOk(x.reduce((acc,curr)=>acc&&isProcExp(curr),true)))
+        if (check.tag!="Ok"||check.value===false)
+           return makeFailure("failure");
+        const bindingsResult = bind(valsResult, (vals: CExp[]) => 
+        bind(vars_to_VarDec,(v:VarDecl[])=>makeOk(zipWith(makeBinding, v, vals))));
+        return safe2((fields_parsed1:VarDecl[], methods_parsed1:Binding[])=>makeOk(makeClassExp(typeclass,fields_parsed1,methods_parsed1)))
+        (varsdecs,bindingsResult);
+    } 
+    return makeFailure("invalid class");
+}
 
+    
 // sexps has the shape (quote <sexp>)
 export const parseLitExp = (param: Sexp): Result<LitExp> =>
     bind(parseSExp(param), (sexp: SExpValue) => makeOk(makeLitExp(sexp)));
@@ -449,8 +465,10 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
 export const parsedToClassExps = (p: Parsed): ClassExp[] => 
+    p.
     // TODO parsedToClassExps
     [];
+const rec_classExps = (ans: ClassExp[], )
 
 // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
