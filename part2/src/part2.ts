@@ -97,7 +97,8 @@ export async function asyncWaterfallWithRetry(fns:[ ()=>Promise<any> , ...((item
     return fns.length === 1? promise_first : 
     fns.slice(1).reduce(async (acc, cur)=> 
         (await (check_func(0, cur, (await acc), false)))
-        , Promise.resolve(promise_first))
+        , Promise
+        .resolve(promise_first))
    
 }
 
