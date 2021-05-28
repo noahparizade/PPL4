@@ -286,8 +286,9 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     const cur_val = typeofExp(exp.var,tenv)
     const new_val = typeofExp(exp.val,tenv)
     const constraint =  bind(cur_val,(y:T.TExp)=>bind(new_val, (x:T.TExp)=>checkEqualType(x, y,exp))) 
-    return safe2((cons:true, newVal:T.TExp)=>
-         makeOk(T.makeVoidTExp()))(constraint,new_val)
+    return safe2((cons:true, newVal:T.TExp)=> cons?
+         makeOk(T.makeVoidTExp()):makeFailure<T.VoidTExp>("failure"))
+         (constraint,new_val)
 };
 
 // Purpose: compute the type of a class-exp(type fields methods)
