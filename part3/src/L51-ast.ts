@@ -465,10 +465,29 @@ const unparseClassExp = (ce: ClassExp, unparseWithTVars?: boolean): Result<strin
 // Collect class expressions in parsed AST so that they can be passed to the type inference module
 
 export const parsedToClassExps = (p: Parsed): ClassExp[] => 
-    p.
+    isProgram(p)? 
+         rest(p.exps).reduce((acc,curr)=>acc.concat(rec_classExps(acc,curr)),rec_classExps([],p.exps[0])): rec_classExps([],p)
+    
     // TODO parsedToClassExps
-    [];
-const rec_classExps = (ans: ClassExp[], )
+
+const rec_classExps = (ans: ClassExp[], exp:Exp ):ClassExp[] =>
+    isNumExp(exp) ? ans :
+    isStrExp(exp) ? ans :
+    isBoolExp(exp) ? ans :
+    isPrimOp(exp) ? ans :
+    isVarRef(exp) ? ans :
+    // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
+    isAppExp(exp) ? ans :
+    isIfExp(exp) ? ans:
+    isLetExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(acc,curr)),ans) :
+    isLetrecExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(ans,curr)),ans) :
+    isProcExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(ans,curr)),ans) :
+    isLitExp(exp) ? ans :
+    isSetExp(exp) ? ans :
+    isClassExp(exp) ? ans.concat([exp]) :
+    // DefineExp | Program
+    isDefineExp(exp) ? ans.concat(rec_classExps(ans,exp.val)) :
+    ans;
 
 // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 

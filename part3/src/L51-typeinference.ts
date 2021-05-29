@@ -102,8 +102,10 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 // so that the user defined types are known to the type inference system.
 // For each class (class : typename ...) add a pair <class.typename classTExp> to TEnv
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
-    // TODO makeTEnvFromClasses
-    return E.makeEmptyTEnv();
+    let classes = A.parsedToClassExps(parsed)
+    let env = E.makeEmptyTEnv();
+    return E.makeExtendTEnv(classes.map((c:A.ClassExp)=>c.typeName.var),classes.map((c:A.ClassExp)=>T.makeClassTExp(c.typeName.var,
+        c.methods.map((b:A.Binding)=>[b.var.var,b.var.texp]))),env)
 }
 
 // Purpose: Compute the type of a concrete expression
@@ -242,8 +244,9 @@ export const typeofLetrec = (exp: A.LetrecExp, tenv: E.TEnv): Result<T.TExp> => 
 export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     const var1 = exp.var.var
     const val = exp.val
-    const typeOfvar = exp.var.texp
-    const constraint = bind(typeofExp(val,tenv), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
+    const typeOfvar = exp.var.texp 
+    const newtype = T.makeFreshTVar() //check
+    const constraint = bind(typeofExp(val,E.makeExtendTEnv([var1],[newtype],tenv)), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
     return bind(constraint, ()=>
         makeOk(T.makeVoidTExp())); 
 };
@@ -286,8 +289,8 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
     const cur_val = typeofExp(exp.var,tenv)
     const new_val = typeofExp(exp.val,tenv)
     const constraint =  bind(cur_val,(y:T.TExp)=>bind(new_val, (x:T.TExp)=>checkEqualType(x, y,exp))) 
-    return safe2((cons:true, newVal:T.TExp)=> cons?
-         makeOk(T.makeVoidTExp()):makeFailure<T.VoidTExp>("failure"))
+    return safe2((cons:true, newVal:T.TExp)=> 
+         makeOk(T.makeVoidTExp()))
          (constraint,new_val)
 };
 
@@ -299,5 +302,5 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    return makeFailure("TODO typeofClass");
+    return makeOk(T.makeClassTExp(exp.typeName.var,exp.methods.map((b:A.Binding)=>[b.var.var,b.var.texp])))
 };

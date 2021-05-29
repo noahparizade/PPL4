@@ -39,6 +39,11 @@ export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise
          return await store.get(param); 
 }
 
+export async function setValue<T,R>(store:PromisedStore<T,R>,param:T, val:R):Promise<R> {
+    await store.set(param,val);
+    return val 
+}
+
 
  export function asycMemo<T, R>(f: (param: T) => R): (param: T) => Promise<R> {
     let store = makePromisedStore<T,R>();
@@ -48,8 +53,17 @@ export async function checkValue<T,R>(store:PromisedStore<T,R>, param:T):Promise
              store.set(param, result)
              return result;
          })
-     }
-     return ans
+        }
+    /*let  ans:(param:T) =>Promise<R> = (param:T) => {
+        try{let res = checkValue(store, param)
+            return res;
+        }    
+        catch (err) {
+            let val = f(param);
+             return setValue(store,param,val)
+            }
+    }*/
+    return ans
  }
 
 /* 2.3 */
