@@ -61,6 +61,7 @@ const checkClassEqualTypes = (te1: T.ClassTExp, te2: T.ClassTExp, exp: A.Exp): R
 // A class can match a proc (symbol -> T) if the symbol is bound and is in the interface of the class
 // In this case T = typeOf(method)
 const checkClassProcEqualTypes = (ct: T.ClassTExp, pt: T.ProcTExp, exp: A.Exp): Result<true> => {
+
     if ((pt.paramTEs.length != 1) || (! T.isSymbolTExp(pt.paramTEs[0])) || (! pt.paramTEs[0].val))
         return makeFailure<true>('A class can only match a proc of 1 ground symbol param');
     const method = pt.paramTEs[0].val.val;
@@ -245,7 +246,7 @@ export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp>
     const var1 = exp.var.var
     const val = exp.val
     const typeOfvar = exp.var.texp 
-    const newtype = T.makeFreshTVar() //check
+    const newtype = T.makeTVar(exp.var.var) //check
     const constraint = bind(typeofExp(val,E.makeExtendTEnv([var1],[newtype],tenv)), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
     return bind(constraint, ()=>
         makeOk(T.makeVoidTExp())); 
@@ -260,7 +261,7 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
-    const type_val = typeofExp(exp,tenv)
+    const type_val = typeofExp(exp,tenv) //(define x:number 5)
     return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
     checkProgram(exps, E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)):
     checkProgram(exps, tenv)))
@@ -302,5 +303,17 @@ export const typeofSet = (exp: A.SetExp, tenv: E.TEnv): Result<T.VoidTExp> => {
 //      type<method_k>(class-tenv) = mk
 // Then type<class(type fields methods)>(tend) = = [t1 * ... * tn -> type]
 export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
-    return makeOk(T.makeClassTExp(exp.typeName.var,exp.methods.map((b:A.Binding)=>[b.var.var,b.var.texp])))
+    let extenv = E.makeExtendTEnv(exp.fields.map((x:A.VarDecl)=>x.var),exp.fields.map((x:A.VarDecl)=>x.texp),tenv)
+    const types_array = mapResult((b:A.Binding)=>typeofExp(b.val,extenv),exp.methods)
+    const methods_types = exp.methods.map((b:A.Binding)=>b.var.texp)
+    const checkArrays = (arr1:T.TExp[],arr2:T.TExp[]):Result<true>=>
+        arr1.length===0?makeOk(true):
+        bind(checkEqualType(arr1[0],arr2[0],exp),(x:true)=>checkArrays(rest(arr1),rest(arr2)))
+    const constraints = bind(types_array,(x:T.TExp[])=>checkArrays(x,methods_types))
+    return bind(constraints,(x:true)=>
+    makeOk(T.makeProcTExp(exp.fields.map((x:A.VarDecl)=>x.texp), A.classExpToClassTExp(exp))))
 };
+
+
+    
+
