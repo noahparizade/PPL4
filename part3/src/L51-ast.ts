@@ -336,7 +336,7 @@ const parseClassExp = (params: Sexp[]): Result<ClassExp> =>
     parseGoodClassExp(params[1], params[2], params[3]);
 
 const parseGoodClassExp = (typeName: Sexp, varDecls: Sexp, bindings: Sexp): Result<ClassExp> =>{
-    if (isString(typeName)&&isArray(varDecls) &&isGoodBindings(bindings)){ 
+    if (isString(typeName)&&isArray(varDecls) &&isGoodBindings(bindings)&&varDecls.reduce((acc,curr)=>acc&&isConcreteVarDecl(curr),true)){ 
         const typeclass = makeTVar(typeName)
         const varsdecs = mapResult((x:Sexp)=>parseVarDecl(x) , varDecls) //fields
         const vars = bindings.map((b:[Sexp,Sexp])=>b[0]);
