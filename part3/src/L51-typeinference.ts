@@ -246,7 +246,7 @@ export const typeofDefine = (exp: A.DefineExp, tenv: E.TEnv): Result<T.VoidTExp>
     const val = exp.val
     const typeOfvar = exp.var.texp 
     const newtype = T.makeTVar(exp.var.var) //check
-    const constraint = bind(typeofExp(val,E.makeExtendTEnv([var1],[newtype],tenv)), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
+    const constraint = bind(typeofExp(val,E.makeExtendTEnv([var1],[typeOfvar],tenv)), (x:T.TExp)=>checkEqualType(x, typeOfvar,exp)) 
     return bind(constraint, ()=>
         makeOk(T.makeVoidTExp())); 
 };
