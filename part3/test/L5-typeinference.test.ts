@@ -261,7 +261,7 @@ describe('L5 Type Inference', () => {
                  (define p12 (pair 1 2))
                  ((p12 'scale) 3))`;
             const expected3 = '(class pair (first : (Empty -> number)) (rest : (Empty -> number)) (scale : (number -> pair)))';
-            expect(verifyTeOfExprWithInference(program3, expected3)).to.deep.equal(makeOk(true));
+            expect(verifyTeOfExprWithInference(program3, expected3)).to.deep.equal(makeOk(true)); 
 
             const program4 = 
             `(L5 (define pair (class : pair 

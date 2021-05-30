@@ -105,8 +105,7 @@ const checkNoOccurrence = (tvar: T.TVar, te: T.TExp, exp: A.Exp): Result<true> =
 export const makeTEnvFromClasses = (parsed: A.Parsed): E.TEnv => {
     let classes = A.parsedToClassExps(parsed)
     let env = E.makeEmptyTEnv();
-    return E.makeExtendTEnv(classes.map((c:A.ClassExp)=>c.typeName.var),classes.map((c:A.ClassExp)=>T.makeClassTExp(c.typeName.var,
-        c.methods.map((b:A.Binding)=>[b.var.var,b.var.texp]))),env)
+    return E.makeExtendTEnv(classes.map((c:A.ClassExp)=>c.typeName.var),classes.map((c:A.ClassExp)=>A.classExpToClassTExp(c)),env)
 }
 
 // Purpose: Compute the type of a concrete expression
@@ -185,7 +184,7 @@ export const typeofProc = (proc: A.ProcExp, tenv: E.TEnv): Result<T.TExp> => {
 export const typeofApp = (app: A.AppExp, tenv: E.TEnv): Result<T.TExp> => {
     const ratorTE = typeofExp(app.rator, tenv);
     const randsTE = mapResult((rand) => typeofExp(rand, tenv), app.rands);
-    const returnTE = T.makeFreshTVar();
+    const returnTE = T.makeFreshTVar()
     const constraint = safe2((ratorTE: T.TExp, randsTE: T.TExp[]) => checkEqualType(ratorTE, T.makeProcTExp(randsTE, returnTE), app))(ratorTE, randsTE);
     return bind(constraint, _ => makeOk(returnTE));
 };
@@ -261,14 +260,15 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
 const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
-    const type_val = typeofExp(exp,tenv) //(define x:number 5)
+    const type_val = typeofExp(exp,tenv)
     return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
     checkProgram(exps, E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)):
     checkProgram(exps, tenv)))
 }
 
 const checkProgram = (exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> =>
-    isEmpty(rest(exps)) ? typeofExp(first(exps), tenv) :
+    isEmpty(rest(exps)) ? typeofProgramExps(first(exps),rest(exps),tenv): 
+    //typeofExp(first(exps), tenv) :
     bind(typeofProgramExps(first(exps),rest(exps), tenv), (ans:T.TExp) => makeOk(ans));
 
 
@@ -306,10 +306,7 @@ export const typeofClass = (exp: A.ClassExp, tenv: E.TEnv): Result<T.TExp> => {
     let extenv = E.makeExtendTEnv(exp.fields.map((x:A.VarDecl)=>x.var),exp.fields.map((x:A.VarDecl)=>x.texp),tenv)
     const types_array = mapResult((b:A.Binding)=>typeofExp(b.val,extenv),exp.methods)
     const methods_types = exp.methods.map((b:A.Binding)=>b.var.texp)
-    const checkArrays = (arr1:T.TExp[],arr2:T.TExp[]):Result<true>=>
-        arr1.length===0?makeOk(true):
-        bind(checkEqualType(arr1[0],arr2[0],exp),(x:true)=>checkArrays(rest(arr1),rest(arr2)))
-    const constraints = bind(types_array,(x:T.TExp[])=>checkArrays(x,methods_types))
+    const constraints = bind(types_array,(x:T.TExp[])=>checkEqualTypes(x,methods_types,exp))
     return bind(constraints,(x:true)=>
     makeOk(T.makeProcTExp(exp.fields.map((x:A.VarDecl)=>x.texp), A.classExpToClassTExp(exp))))
 };
