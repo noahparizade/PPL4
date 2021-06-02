@@ -470,7 +470,7 @@ export const parsedToClassExps = (p: Parsed): ClassExp[] =>
     
     // TODO parsedToClassExps
 
-const rec_classExps = (ans: ClassExp[], exp:Exp ):ClassExp[] =>
+export const rec_classExps = (ans: ClassExp[], exp:Exp ):ClassExp[] =>
     isNumExp(exp) ? ans :
     isStrExp(exp) ? ans :
     isBoolExp(exp) ? ans :
@@ -484,11 +484,12 @@ const rec_classExps = (ans: ClassExp[], exp:Exp ):ClassExp[] =>
     isProcExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(ans,curr)),ans) :
     isLitExp(exp) ? ans :
     isSetExp(exp) ? ans :
-    isClassExp(exp) ? ans.concat([exp]) :
+    isClassExp(exp) ? exp.methods.reduce((acc,curr)=>acc.concat(rec_classExps(acc,curr.val)),ans.concat([exp])) :
     // DefineExp | Program
     isDefineExp(exp) ? ans.concat(rec_classExps(ans,exp.val)) :
     ans;
 
+    
 // L51 
 export const classExpToClassTExp = (ce: ClassExp): ClassTExp => 
     makeClassTExp(ce.typeName.var, map((binding: Binding) => [binding.var.var, binding.var.texp], ce.methods));

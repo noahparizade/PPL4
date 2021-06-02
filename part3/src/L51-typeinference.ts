@@ -258,14 +258,14 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(exp.exps) ? makeFailure("Empty program") :
     typeofProgramExps(first(exp.exps), rest(exp.exps), tenv);
 
-const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
+export const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
     const type_val = typeofExp(exp,tenv)
     return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
     checkProgram(exps, E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)):
     checkProgram(exps, tenv)))
 }
 
-const checkProgram = (exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> =>
+export const checkProgram = (exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> =>
     isEmpty(rest(exps)) ? typeofProgramExps(first(exps),rest(exps),tenv): 
     //typeofExp(first(exps), tenv) :
     bind(typeofProgramExps(first(exps),rest(exps), tenv), (ans:T.TExp) => makeOk(ans));
