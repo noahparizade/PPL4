@@ -260,7 +260,7 @@ export const typeofProgram = (exp: A.Program, tenv: E.TEnv): Result<T.TExp> =>
 
 export const typeofProgramExps = (exp: A.Exp, exps: A.Exp[], tenv: E.TEnv): Result<T.TExp> => {
     const type_val = typeofExp(exp,tenv)
-    return exps.length===0?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
+    return isEmpty(exps)?bind(type_val,(x:T.TExp)=>makeOk(x)): bind(type_val, (x:T.TExp)=>(A.isDefineExp(exp)?
     checkProgram(exps, E.makeExtendTEnv([exp.var.var],[exp.var.texp],tenv)):
     checkProgram(exps, tenv)))
 }

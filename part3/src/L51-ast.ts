@@ -477,17 +477,19 @@ export const rec_classExps = (ans: ClassExp[], exp:Exp ):ClassExp[] =>
     isPrimOp(exp) ? ans :
     isVarRef(exp) ? ans :
     // AppExp | IfExp | ProcExp | LetExp | LitExp | LetrecExp | SetExp
-    isAppExp(exp) ? ans :
-    isIfExp(exp) ? ans:
-    isLetExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(acc,curr)),ans) :
-    isLetrecExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(ans,curr)),ans) :
-    isProcExp(exp) ? exp.body.reduce((acc,curr)=>acc.concat(rec_classExps(ans,curr)),ans) :
+    isAppExp(exp) ? exp.rands.reduce((acc,curr)=>rec_classExps(acc,curr),rec_classExps(ans,exp.rator)) :
+    isIfExp(exp) ? rec_classExps(rec_classExps(rec_classExps(ans,exp.test),exp.then),exp.alt):
+    isLetExp(exp) ? exp.body.reduce((acc,curr)=>rec_classExps(acc,curr),exp.bindings.reduce((acc,curr)=>rec_classExps(acc,curr.val),ans)) :
+    isLetrecExp(exp) ? exp.body.reduce((acc,curr)=>rec_classExps(acc,curr),exp.bindings.reduce((acc,curr)=>rec_classExps(acc,curr.val),ans)) :
+    isProcExp(exp) ? exp.body.reduce((acc,curr)=>rec_classExps(acc,curr),ans) :
     isLitExp(exp) ? ans :
-    isSetExp(exp) ? ans :
-    isClassExp(exp) ? exp.methods.reduce((acc,curr)=>acc.concat(rec_classExps(acc,curr.val)),ans.concat([exp])) :
+    isSetExp(exp) ? rec_classExps(ans,exp.val) :
+    isClassExp(exp) ? exp.methods.reduce((acc,curr)=>rec_classExps(acc,curr.val),ans.concat([exp])) :
     // DefineExp | Program
-    isDefineExp(exp) ? ans.concat(rec_classExps(ans,exp.val)) :
+    isDefineExp(exp) ? rec_classExps(ans,exp.val) :
     ans;
+
+    
 
     
 // L51 
